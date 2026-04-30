@@ -1,6 +1,7 @@
 import random
 from xmlrpc import client
 import discord
+from discord import app_commands
 from discord.ext import commands, tasks
 import os
 from dotenv import load_dotenv
@@ -8,6 +9,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 BOT_TOKEN = os.getenv('BOT_TOKEN')
+DISCORD_TEST_GUILD_ID = os.getenv('DISCORD_TEST_GUILD_ID')
 
 description = """Example description here"""
 
@@ -17,7 +19,7 @@ intents.message_content = True
 
 class MyBot(commands.Bot):
     def __init__(self):
-        super().__init__(command_prefix='$', description=description, intents=intents)
+        super().__init__(command_prefix='!', description=description, intents=intents)
 
     async def setup_hook(self):
         slow_counter.start()
@@ -34,6 +36,11 @@ async def after_slow_counter():
 
 @bot.event
 async def on_ready():
+    synced = await bot.tree.sync() # 
+    #TODO : as of now we wait only for the test guild, but we should also sync globally
+    #synced = await bot.tree.sync(guild=discord.Object(id=DISCORD_TEST_GUILD_ID))
+    print(f"Bot connected and commands synchronized!")
+    print(f"Synced {len(synced)} commands for test guild.")
     print(f'We have logged in as {bot.user}')
 
 @bot.event
@@ -46,7 +53,10 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
-@bot.command()
+@bot.hybrid_command(name="roll", description="Rolls a dice in NdN format.")
+@app_commands.describe(
+    dice="The dice to roll, in NdN format (e.g., 2d6)"
+    )
 async def roll(ctx, dice: str):
     """Rolls a dice in NdN format."""
     try:
@@ -58,9 +68,11 @@ async def roll(ctx, dice: str):
     result = ', '.join(str(random.randint(1, limit)) for r in range(rolls))
     await ctx.send(result)
 
-@bot.command()
-async def test(ctx, arg):
+@bot.hybrid_command(name="test", description="Test command")
+@app_commands.describe(
+    arg="A string argument to test the command"
+    )
+async def test(ctx, arg: str):
     await ctx.send(arg)
-
 
 bot.run(BOT_TOKEN)
