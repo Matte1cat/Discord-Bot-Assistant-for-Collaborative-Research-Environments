@@ -3,12 +3,19 @@ from dataclasses import dataclass
 
 from dotenv import load_dotenv
 
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_SERVICES_CONFIG = (
+    PROJECT_ROOT / "resources" / "services.json"
+)
 
 @dataclass(frozen=True)
 class Settings:
     bot_token: str
     test_guild_id: int | None
     log_level: str
+    services_config_path: Path
 
 
 def load_settings() -> Settings:
@@ -45,8 +52,19 @@ def load_settings() -> Settings:
             f"Invalid LOG_LEVEL: {log_level}"
         )
 
+    raw_services_path = os.getenv(
+    "SERVICES_CONFIG_PATH"
+    )
+
+    services_config_path = (
+        Path(raw_services_path)
+        if raw_services_path
+        else DEFAULT_SERVICES_CONFIG
+    )
+
     return Settings(
         bot_token=bot_token,
         test_guild_id=test_guild_id,
         log_level=log_level,
+        services_config_path=services_config_path,
     )

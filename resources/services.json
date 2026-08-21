@@ -1,0 +1,30 @@
+{
+    "services": [
+        {
+            "key": "httpbin",
+            "display_name": "HTTPBin Test Service",
+            "checks": [
+                {
+                    "type": "http",
+                    "name": "HTTP availability",
+                    "url": "https://httpbin.org/status/200",
+                    "expected_status": 200,
+                    "timeout_seconds": 5.0
+                }
+            ]
+        },
+        {
+            "key": "unimore",
+            "display_name": "UniMORE Website",
+            "checks": [
+                {
+                    "type": "http",
+                    "name": "Website availability",
+                    "url": "https://www.unimore.it/",
+                    "expected_status": 200,
+                    "timeout_seconds": 5.0
+                }
+            ]
+        }
+    ]
+}

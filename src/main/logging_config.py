@@ -13,7 +13,14 @@ def setup_logging(log_level: str) -> None:
     level = getattr(logging, log_level)
 
     formatter = logging.Formatter(
-        "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
+    (
+        "%(asctime)s | %(levelname)-8s | %(name)s | "
+        "service=%(service)s | check=%(check)s | %(message)s"
+    ),
+    defaults={
+        "service": "-",
+        "check": "-",
+    },
     )
 
     console_handler = logging.StreamHandler()
