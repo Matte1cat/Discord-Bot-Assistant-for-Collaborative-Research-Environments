@@ -1,0 +1,17 @@
+{
+    "monitoring": {
+        "interval_seconds": 60
+    },
+    "alerts": {
+        "discord": {
+            "enabled": true,
+            "destinations": [
+                {
+                    "name": "development",
+                    "guild_id": "961646643697033298",
+                    "channel_id": "961646646960222260"
+                }
+            ]
+        }
+    }
+}

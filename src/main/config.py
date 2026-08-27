@@ -9,6 +9,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_SERVICES_CONFIG = (
     PROJECT_ROOT / "resources" / "services.json"
 )
+DEFAULT_RUNTIME_CONFIG = (
+    PROJECT_ROOT / "resources" / "runtime.json"
+)
 
 @dataclass(frozen=True)
 class Settings:
@@ -16,7 +19,7 @@ class Settings:
     test_guild_id: int | None
     log_level: str
     services_config_path: Path
-
+    runtime_config_path: Path
 
 def load_settings() -> Settings:
     load_dotenv()
@@ -62,9 +65,20 @@ def load_settings() -> Settings:
         else DEFAULT_SERVICES_CONFIG
     )
 
+    raw_runtime_config_path = os.getenv(
+        "RUNTIME_CONFIG_PATH"
+    )
+
+    runtime_config_path = (
+        Path(raw_runtime_config_path)
+        if raw_runtime_config_path
+        else DEFAULT_RUNTIME_CONFIG
+    )
+
     return Settings(
         bot_token=bot_token,
         test_guild_id=test_guild_id,
         log_level=log_level,
         services_config_path=services_config_path,
+        runtime_config_path=runtime_config_path
     )

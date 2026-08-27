@@ -23,3 +23,18 @@ class ServiceResult:
     service_name: str
     status: CheckStatus
     check_results: tuple[CheckResult, ...]
+
+@dataclass(frozen=True)
+class ServiceTransition:
+    service_key: str
+    service_name: str
+    previous_status: CheckStatus
+    current_status: CheckStatus
+    detected_at: datetime
+    previous_result: ServiceResult
+    current_result: ServiceResult
+
+@dataclass(frozen=True)
+class MonitoringCycleResult:
+    service_results: tuple[ServiceResult, ...]
+    transitions: tuple[ServiceTransition, ...]
