@@ -12,6 +12,8 @@ from monitoring.state_store import MonitoringStateStore
 
 from alerts.base import TransitionNotifier
 
+from history.base import HistoryStore
+
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +24,7 @@ class MonitoringScheduler:
         manager: MonitoringManager,
         state_store: MonitoringStateStore,
         interval_seconds: float,
+        history_store: HistoryStore | None = None,
         notifiers: tuple[TransitionNotifier, ...] = (),
     ) -> None:
         if interval_seconds <= 0:
@@ -32,6 +35,7 @@ class MonitoringScheduler:
         self._manager = manager
         self._state_store = state_store
         self._interval_seconds = interval_seconds
+        self._history_store = history_store
         self._notifiers = notifiers
 
         self._task: asyncio.Task[None] | None = None
@@ -107,6 +111,11 @@ class MonitoringScheduler:
             if result is not None
         )
 
+        for result in completed_results:
+            await self._persist_service_result(
+                result
+            )
+
         transitions = []
 
         for result in completed_results:
@@ -156,6 +165,10 @@ class MonitoringScheduler:
                 )
 
         for transition in transitions:
+            await self._persist_transition(
+                transition
+            )
+
             await self._notify_transition(
                 transition
             )
@@ -225,3 +238,65 @@ class MonitoringScheduler:
                         "check": "-",
                     },
                 )
+
+    async def _persist_service_result(
+        self,
+        result: ServiceResult,
+    ) -> None:
+        if self._history_store is None:
+            return
+
+        try:
+            await self._history_store.append_service_result(
+                result
+            )
+
+        except Exception:
+            logger.exception(
+                "Failed to persist service result",
+                extra={
+                    "service": result.service_key,
+                    "check": "-",
+                },
+            )
+
+            return
+
+        logger.debug(
+            "Service result persisted",
+            extra={
+                "service": result.service_key,
+                "check": "-",
+            },
+        )
+
+    async def _persist_transition(
+        self,
+        transition: ServiceTransition,
+    ) -> None:
+        if self._history_store is None:
+            return
+
+        try:
+            await self._history_store.append_transition(
+                transition
+            )
+
+        except Exception:
+            logger.exception(
+                "Failed to persist service transition",
+                extra={
+                    "service": transition.service_key,
+                    "check": "-",
+                },
+            )
+
+            return
+
+        logger.debug(
+            "Service transition persisted",
+            extra={
+                "service": transition.service_key,
+                "check": "-",
+            },
+        )

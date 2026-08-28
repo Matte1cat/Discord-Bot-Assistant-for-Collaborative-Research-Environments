@@ -42,7 +42,8 @@ def test_valid_runtime_configuration_with_multiple_destinations(
     )
 
     runtime_config = load_runtime_config(
-        config_path
+        config_path,
+        project_root=tmp_path,
     )
 
     assert (
@@ -104,7 +105,8 @@ def test_discord_alerts_can_be_disabled_without_destinations(
     )
 
     runtime_config = load_runtime_config(
-        config_path
+        config_path,
+        project_root=tmp_path,
     )
 
     assert (
@@ -144,7 +146,10 @@ def test_enabled_discord_alerts_require_destination(
         RuntimeConfigurationError,
         match="no destinations",
     ):
-        load_runtime_config(config_path)
+        load_runtime_config(
+            config_path,
+            project_root=tmp_path,
+        )
 
 
 @pytest.mark.parametrize(
@@ -184,7 +189,10 @@ def test_invalid_monitoring_interval_is_rejected(
         RuntimeConfigurationError,
         match="positive number",
     ):
-        load_runtime_config(config_path)
+        load_runtime_config(
+            config_path,
+            project_root=tmp_path,
+        )
 
 
 def test_invalid_discord_channel_id_is_rejected(
@@ -219,7 +227,10 @@ def test_invalid_discord_channel_id_is_rejected(
         RuntimeConfigurationError,
         match="valid Discord ID",
     ):
-        load_runtime_config(config_path)
+        load_runtime_config(
+            config_path,
+            project_root=tmp_path,
+        )
 
 
 def test_invalid_discord_guild_id_is_rejected(
@@ -254,4 +265,7 @@ def test_invalid_discord_guild_id_is_rejected(
         RuntimeConfigurationError,
         match="valid Discord ID",
     ):
-        load_runtime_config(config_path)
+        load_runtime_config(
+            config_path,
+            project_root=tmp_path,
+        )

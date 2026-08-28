@@ -37,6 +37,7 @@ def _parse_discord_id(
 
 def load_runtime_config(
     config_path: Path,
+    project_root: Path,
 ) -> RuntimeConfig:
     try:
         with config_path.open(
@@ -67,6 +68,48 @@ def load_runtime_config(
         raise RuntimeConfigurationError(
             "'monitoring' must be an object."
         )
+
+    history = config.get("history", {})
+
+    if not isinstance(history, dict):
+        raise RuntimeConfigurationError(
+            "'history' must be an object."
+        )
+
+    history_enabled = history.get(
+        "enabled",
+        True,
+    )
+
+    if not isinstance(history_enabled, bool):
+        raise RuntimeConfigurationError(
+            "'history.enabled' must be a boolean."
+        )
+
+    raw_history_directory = history.get(
+        "directory",
+        "data/history",
+    )
+
+    if (
+        not isinstance(raw_history_directory, str)
+        or not raw_history_directory.strip()
+    ):
+        raise RuntimeConfigurationError(
+            "'history.directory' must be "
+            "a non-empty string."
+        )
+
+    history_directory = Path(
+        raw_history_directory
+    )
+
+    if not history_directory.is_absolute():
+        history_directory = (
+            project_root / history_directory
+        )
+
+    history_directory = history_directory.resolve()
 
     interval = monitoring.get("interval_seconds")
 
@@ -156,6 +199,8 @@ def load_runtime_config(
 
     return RuntimeConfig(
         monitoring_interval_seconds=float(interval),
+        history_enabled=history_enabled,
+        history_directory=history_directory,
         discord_alerts_enabled=enabled,
         discord_alert_destinations=tuple(
             destinations

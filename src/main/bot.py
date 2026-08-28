@@ -4,7 +4,7 @@ import aiohttp
 import discord
 from discord.ext import commands
 
-from config import Settings
+from config import PROJECT_ROOT, Settings
 
 from monitoring.manager import MonitoringManager
 from monitoring.service_loader import load_services
@@ -14,6 +14,9 @@ from monitoring.state_store import MonitoringStateStore
 
 from alerts.discord_notifier import DiscordTransitionNotifier
 from runtime_config_loader import load_runtime_config
+
+from history.base import HistoryStore
+from history.file_store import FileHistoryStore
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +43,8 @@ class ThesisBot(commands.Bot):
         self._register_services()
 
         runtime_config = load_runtime_config(
-            self.settings.runtime_config_path
+            self.settings.runtime_config_path,
+            PROJECT_ROOT,
         )
 
         notifiers = ()
@@ -65,12 +69,30 @@ class ThesisBot(commands.Bot):
                 "Discord monitoring alerts disabled."
             )
 
+        if runtime_config.history_enabled:
+            self.history_store = FileHistoryStore(
+                directory=runtime_config.history_directory
+            )
+
+            logger.info(
+                "Monitoring history enabled | directory=%s",
+                runtime_config.history_directory,
+            )
+
+        else:
+            self.history_store = None
+
+            logger.info(
+                "Monitoring history disabled."
+            )
+
         self.monitoring_scheduler = MonitoringScheduler(
             manager=self.monitoring_manager,
             state_store=self.monitoring_state,
             interval_seconds=(
                 runtime_config.monitoring_interval_seconds
             ),
+            history_store=self.history_store,
             notifiers=notifiers,
         )
 

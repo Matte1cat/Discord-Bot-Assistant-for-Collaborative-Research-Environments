@@ -219,3 +219,6 @@ __marimo__/
 
 #logging
 logs/
+
+# Runtime data
+data/
