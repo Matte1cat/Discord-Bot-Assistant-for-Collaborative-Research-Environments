@@ -1,3 +1,6 @@
+"""
+Provides the application entry point and starts the configured Discord bot.
+"""
 import logging
 
 from bot import ThesisBot

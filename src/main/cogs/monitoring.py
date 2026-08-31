@@ -1,3 +1,6 @@
+"""
+Provides Discord commands for manual service checks and monitoring history.
+"""
 import discord
 from discord import app_commands
 from discord.ext import commands

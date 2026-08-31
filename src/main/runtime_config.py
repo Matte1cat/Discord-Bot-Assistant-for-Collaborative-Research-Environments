@@ -1,3 +1,6 @@
+"""
+Defines the runtime configuration models for monitoring, history, and alerts.
+"""
 from dataclasses import dataclass
 from pathlib import Path
 

@@ -1,3 +1,6 @@
+"""
+Tests integration between periodic monitoring and persistent history storage.
+"""
 from datetime import datetime, timezone
 
 import pytest

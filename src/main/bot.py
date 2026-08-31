@@ -1,3 +1,6 @@
+"""
+Defines the Discord bot lifecycle and coordinates application-level components.
+"""
 import logging
 import aiohttp
 

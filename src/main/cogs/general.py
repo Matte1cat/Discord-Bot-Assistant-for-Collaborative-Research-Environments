@@ -1,3 +1,6 @@
+"""
+Provides general Discord commands for basic bot information and diagnostics.
+"""
 import discord
 from discord import app_commands
 from discord.ext import commands

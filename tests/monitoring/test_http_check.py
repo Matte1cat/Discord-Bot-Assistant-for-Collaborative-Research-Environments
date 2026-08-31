@@ -1,3 +1,6 @@
+"""
+Tests HTTP monitoring behaviour for successful, failed, and timed-out requests.
+"""
 from typing import cast
 
 import aiohttp

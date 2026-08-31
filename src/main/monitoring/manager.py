@@ -1,3 +1,6 @@
+"""
+Coordinates service check execution and produces aggregate monitoring results.
+"""
 import asyncio
 import logging
 

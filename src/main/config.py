@@ -1,3 +1,6 @@
+"""
+Loads environment-based application settings and defines project-wide paths.
+"""
 import os
 from dataclasses import dataclass
 

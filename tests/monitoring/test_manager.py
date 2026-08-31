@@ -1,3 +1,6 @@
+"""
+Tests service registration, check execution, aggregation, and failure handling.
+"""
 from datetime import datetime, timezone
 
 import pytest

@@ -1,3 +1,6 @@
+"""
+Tests detection of service status changes and initial monitoring baselines.
+"""
 from datetime import datetime, timezone
 
 import pytest

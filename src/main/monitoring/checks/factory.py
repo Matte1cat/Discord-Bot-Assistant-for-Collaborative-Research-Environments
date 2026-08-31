@@ -1,3 +1,6 @@
+"""
+Builds monitoring checks from validated external configuration definitions.
+"""
 from urllib.parse import urlparse
 
 import aiohttp

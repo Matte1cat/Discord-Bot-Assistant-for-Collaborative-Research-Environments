@@ -1,3 +1,6 @@
+"""
+Defines the storage contract for monitoring results and transition history.
+"""
 from typing import Protocol
 
 from history.models import (

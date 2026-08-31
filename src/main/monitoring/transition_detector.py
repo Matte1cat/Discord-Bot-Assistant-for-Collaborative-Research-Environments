@@ -1,3 +1,6 @@
+"""
+Detects meaningful service status changes between consecutive monitoring results.
+"""
 from datetime import datetime, timezone
 
 from monitoring.models import (

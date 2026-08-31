@@ -1,3 +1,6 @@
+"""
+Defines persistent history records reconstructed from stored monitoring data.
+"""
 from dataclasses import dataclass
 from datetime import datetime
 

@@ -1,3 +1,6 @@
+"""
+Loads and validates runtime behaviour from the external JSON configuration.
+"""
 import json
 from pathlib import Path
 

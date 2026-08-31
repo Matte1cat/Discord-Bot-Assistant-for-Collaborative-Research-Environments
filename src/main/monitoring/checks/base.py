@@ -1,3 +1,6 @@
+"""
+Defines the common contract implemented by all monitoring check types.
+"""
 from abc import ABC, abstractmethod
 
 from monitoring.models import CheckResult

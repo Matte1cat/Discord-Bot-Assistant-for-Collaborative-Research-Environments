@@ -1,3 +1,6 @@
+"""
+Tests loading and validation of monitored services and their configured checks.
+"""
 import json
 from typing import cast
 

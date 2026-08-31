@@ -1,3 +1,6 @@
+"""
+Tests loading and validation of monitoring, history, and Discord runtime configuration.
+"""
 import json
 
 import pytest

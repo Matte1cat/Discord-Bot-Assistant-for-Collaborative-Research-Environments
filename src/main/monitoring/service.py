@@ -1,3 +1,6 @@
+"""
+Defines monitored services as named collections of configured monitoring checks.
+"""
 from dataclasses import dataclass
 
 from monitoring.checks.base import BaseCheck

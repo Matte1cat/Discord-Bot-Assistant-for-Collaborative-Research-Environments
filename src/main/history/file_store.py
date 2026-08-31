@@ -1,3 +1,6 @@
+"""
+Provides file-based persistence and retrieval of monitoring results and transitions.
+"""
 import asyncio
 import json
 import logging

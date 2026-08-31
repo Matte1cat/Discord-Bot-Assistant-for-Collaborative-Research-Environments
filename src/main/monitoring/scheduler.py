@@ -1,3 +1,6 @@
+"""
+Coordinates periodic monitoring, state updates, persistence, and transition processing.
+"""
 import asyncio
 import logging
 

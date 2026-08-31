@@ -1,3 +1,6 @@
+"""
+Tests scheduler lifecycle, transition processing, and notifier failure isolation.
+"""
 from datetime import datetime, timezone
 
 import asyncio

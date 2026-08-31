@@ -1,3 +1,6 @@
+"""
+Loads and validates monitored services from the external service configuration.
+"""
 import json
 from pathlib import Path
 

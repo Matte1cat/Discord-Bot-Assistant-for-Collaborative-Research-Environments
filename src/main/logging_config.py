@@ -1,3 +1,6 @@
+"""
+Configures structured console and rotating-file logging for the application.
+"""
 import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path

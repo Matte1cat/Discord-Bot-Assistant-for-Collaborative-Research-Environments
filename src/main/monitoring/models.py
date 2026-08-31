@@ -1,3 +1,6 @@
+"""
+Defines the domain models used to represent monitoring results and state transitions.
+"""
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum

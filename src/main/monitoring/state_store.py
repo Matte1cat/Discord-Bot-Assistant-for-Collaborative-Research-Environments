@@ -1,3 +1,6 @@
+"""
+Maintains the latest in-memory monitoring result for each configured service.
+"""
 from monitoring.models import ServiceResult
 
 

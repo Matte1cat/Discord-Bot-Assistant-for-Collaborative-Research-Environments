@@ -1,3 +1,6 @@
+"""
+Delivers service status transition notifications to configured Discord destinations.
+"""
 import logging
 
 import discord

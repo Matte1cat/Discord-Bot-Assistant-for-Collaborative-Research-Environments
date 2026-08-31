@@ -1,3 +1,6 @@
+"""
+Tests file-based monitoring history persistence, retrieval, filtering, and resilience.
+"""
 from datetime import datetime, timezone
 
 import pytest
