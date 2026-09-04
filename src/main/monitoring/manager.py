@@ -135,3 +135,25 @@ class MonitoringManager:
             status=overall_status,
             check_results=results,
         )
+
+    def replace(
+        self,
+        service: Service,
+    ) -> None:
+        if service.key not in self._services:
+            raise KeyError(
+                f"Service '{service.key}' is not registered."
+            )
+
+        self._services[service.key] = service
+
+    def unregister(
+        self,
+        service_key: str,
+    ) -> Service:
+        if service_key not in self._services:
+            raise KeyError(
+                f"Service '{service_key}' is not registered."
+            )
+
+        return self._services.pop(service_key)

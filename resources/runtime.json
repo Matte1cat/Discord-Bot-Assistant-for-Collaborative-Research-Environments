@@ -1,21 +1,32 @@
 {
-    "monitoring": {
-        "interval_seconds": 60
-    },
-    "history": {
-        "enabled": true,
-        "directory": "data/history"
-    },
-    "alerts": {
-        "discord": {
-            "enabled": true,
-            "destinations": [
-                {
-                    "name": "development",
-                    "guild_id": "961646643697033298",
-                    "channel_id": "961646646960222260"
-                }
-            ]
+  "monitoring": {
+    "interval_seconds": 60.0
+  },
+  "history": {
+    "enabled": true,
+    "directory": "data/history"
+  },
+  "alerts": {
+    "discord": {
+      "enabled": true,
+      "destinations": [
+        {
+          "name": "development",
+          "guild_id": "961646643697033298",
+          "channel_id": "961646646960222260"
         }
+      ]
     }
+  },
+  "service_management": {
+    "guilds": [
+      {
+        "guild_id": "961646643697033298",
+        "guild_name": "test cringe",
+        "authorized_role_ids": [
+          "1545476079525822504"
+        ]
+      }
+    ]
+  }
 }

@@ -30,3 +30,12 @@ class MonitoringStateStore:
         self,
     ) -> tuple[ServiceResult, ...]:
         return tuple(self._states.values())
+
+    def remove(
+        self,
+        service_key: str,
+    ) -> ServiceResult | None:
+        return self._states.pop(
+            service_key,
+            None,
+        )

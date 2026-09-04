@@ -7,6 +7,7 @@ from pathlib import Path
 from runtime_config import (
     DiscordAlertDestination,
     RuntimeConfig,
+    ServiceManagementGuildConfig,
 )
 
 
@@ -114,6 +115,166 @@ def load_runtime_config(
 
     history_directory = history_directory.resolve()
 
+    service_management = config.get(
+        "service_management",
+        {},
+    )
+
+    if not isinstance(
+        service_management,
+        dict,
+    ):
+        raise RuntimeConfigurationError(
+            "'service_management' must be an object."
+        )
+
+    raw_guilds = service_management.get(
+        "guilds",
+        [],
+    )
+
+    if not isinstance(
+        raw_guilds,
+        list,
+    ):
+        raise RuntimeConfigurationError(
+            "'service_management.guilds' must be a list."
+        )
+
+    service_management_guilds: list[
+        ServiceManagementGuildConfig
+    ] = []
+
+    for guild_index, raw_guild in enumerate(
+        raw_guilds
+    ):
+        if not isinstance(
+            raw_guild,
+            dict,
+        ):
+            raise RuntimeConfigurationError(
+                (
+                    "Service-management guild at index "
+                    f"{guild_index} must be an object."
+                )
+            )
+
+        raw_guild_id = raw_guild.get(
+            "guild_id"
+        )
+
+        try:
+            guild_id = int(
+                raw_guild_id
+            )
+
+        except (TypeError, ValueError) as exc:
+            raise RuntimeConfigurationError(
+                (
+                    "Service-management guild at index "
+                    f"{guild_index} has an invalid guild ID."
+                )
+            ) from exc
+
+        if guild_id <= 0:
+            raise RuntimeConfigurationError(
+                (
+                    "Service-management guild at index "
+                    f"{guild_index} must have a positive "
+                    "guild ID."
+                )
+            )
+
+        guild_name = raw_guild.get(
+            "guild_name",
+            "",
+        )
+
+        if not isinstance(
+            guild_name,
+            str,
+        ):
+            raise RuntimeConfigurationError(
+                (
+                    "Service-management guild at index "
+                    f"{guild_index} has an invalid guild name."
+                )
+            )
+
+        raw_role_ids = raw_guild.get(
+            "authorized_role_ids",
+            [],
+        )
+
+        if not isinstance(
+            raw_role_ids,
+            list,
+        ):
+            raise RuntimeConfigurationError(
+                (
+                    "Service-management guild at index "
+                    f"{guild_index} must contain an "
+                    "'authorized_role_ids' list."
+                )
+            )
+
+        authorized_role_ids: list[int] = []
+
+        for role_index, raw_role_id in enumerate(
+            raw_role_ids
+        ):
+            if isinstance(
+                raw_role_id,
+                bool,
+            ):
+                raise RuntimeConfigurationError(
+                    (
+                        "Authorized role at index "
+                        f"{role_index} for guild "
+                        f"'{guild_id}' is not a valid "
+                        "Discord ID."
+                    )
+                )
+
+            try:
+                role_id = int(
+                    raw_role_id
+                )
+
+            except (TypeError, ValueError) as exc:
+                raise RuntimeConfigurationError(
+                    (
+                        "Authorized role at index "
+                        f"{role_index} for guild "
+                        f"'{guild_id}' is not a valid "
+                        "Discord ID."
+                    )
+                ) from exc
+
+            if role_id <= 0:
+                raise RuntimeConfigurationError(
+                    (
+                        "Authorized role IDs must "
+                        "be positive."
+                    )
+                )
+
+            authorized_role_ids.append(
+                role_id
+            )
+
+        service_management_guilds.append(
+            ServiceManagementGuildConfig(
+                guild_id=guild_id,
+                guild_name=guild_name,
+                authorized_role_ids=tuple(
+                    dict.fromkeys(
+                        authorized_role_ids
+                    )
+                ),
+            )
+        )
+
     interval = monitoring.get("interval_seconds")
 
     if (
@@ -201,6 +362,9 @@ def load_runtime_config(
         )
 
     return RuntimeConfig(
+        service_management_guilds=tuple(
+            service_management_guilds
+        ),
         monitoring_interval_seconds=float(interval),
         history_enabled=history_enabled,
         history_directory=history_directory,

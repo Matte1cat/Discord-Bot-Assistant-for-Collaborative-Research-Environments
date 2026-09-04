@@ -1,43 +1,82 @@
 {
-    "services": [
+  "services": [
+    {
+      "key": "httpbin",
+      "display_name": "HTTPBin Test Service",
+      "checks": [
         {
-            "key": "httpbin",
-            "display_name": "HTTPBin Test Service",
-            "checks": [
-                {
-                    "type": "http",
-                    "name": "HTTP availability",
-                    "url": "https://httpbin.org/status/200",
-                    "expected_status": 200,
-                    "timeout_seconds": 5.0
-                }
-            ]
-        },
-        {
-            "key": "unimore",
-            "display_name": "UniMORE Website",
-            "checks": [
-                {
-                    "type": "http",
-                    "name": "Website availability",
-                    "url": "https://www.unimore.it/",
-                    "expected_status": 200,
-                    "timeout_seconds": 5.0
-                }
-            ]
-        },
-        {
-            "key": "local-test",
-            "display_name": "Local Test Service",
-            "checks": [
-                {
-                    "type": "http",
-                    "name": "Local HTTP availability",
-                    "url": "http://127.0.0.1:8765",
-                    "expected_status": 200,
-                    "timeout_seconds": 2.0
-                }
-            ]
+          "type": "http",
+          "name": "HTTP availability",
+          "url": "https://httpbin.org/status/200",
+          "expected_status": 200,
+          "timeout_seconds": 5.0
         }
-    ]
+      ]
+    },
+    {
+      "key": "unimore",
+      "display_name": "UniMORE Website",
+      "checks": [
+        {
+          "type": "http",
+          "name": "Website availability",
+          "url": "https://www.unimore.it/",
+          "expected_status": 200,
+          "timeout_seconds": 5.0
+        }
+      ]
+    },
+    {
+      "key": "local-test",
+      "display_name": "Local Test Service",
+      "checks": [
+        {
+          "type": "http",
+          "name": "Local HTTP availability",
+          "url": "http://127.0.0.1:8765",
+          "expected_status": 200,
+          "timeout_seconds": 2.0
+        }
+      ]
+    },
+    {
+      "key": "aimage",
+      "display_name": "aimage Lab Service",
+      "checks": [
+        {
+          "type": "http",
+          "name": "aimage HTTP availability",
+          "url": "https://aimagelab.unimore.it",
+          "expected_status": 200,
+          "timeout_seconds": 2.0
+        }
+      ]
+    },
+    {
+      "key": "richieste",
+      "display_name": "richieste Service",
+      "checks": [
+        {
+          "type": "http",
+          "name": "richieste HTTP availability",
+          "url": "https://richieste.ing.unimore.it",
+          "expected_status": 200,
+          "timeout_seconds": 2.0
+        }
+      ]
+    },
+    {
+      "key": "yggdrasil",
+      "display_name": "yggdrasil Service",
+      "checks": [
+        {
+          "type": "http",
+          "name": "yggdrasil HTTP availability",
+          "url": "https://yggdrasil.ing.unimore.it",
+          "expected_status": 200,
+          "timeout_seconds": 2.0
+        }
+      ]
+    }
+  ]
 }

@@ -11,6 +11,11 @@ class DiscordAlertDestination:
     guild_id: int
     channel_id: int
 
+@dataclass(frozen=True)
+class ServiceManagementGuildConfig:
+    guild_id: int
+    guild_name: str
+    authorized_role_ids: tuple[int, ...]
 
 @dataclass(frozen=True)
 class RuntimeConfig:
@@ -18,6 +23,10 @@ class RuntimeConfig:
 
     history_enabled: bool
     history_directory: Path
+
+    service_management_guilds: tuple[
+        ServiceManagementGuildConfig, ...
+    ]
 
     discord_alerts_enabled: bool
     discord_alert_destinations: tuple[

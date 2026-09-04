@@ -14,12 +14,16 @@ from monitoring.service_loader import load_services
 from monitoring.exceptions import MonitoringConfigurationError
 from monitoring.scheduler import MonitoringScheduler
 from monitoring.state_store import MonitoringStateStore
+from monitoring.service_config_store import (
+    ServiceConfigStore,
+)
 
 from alerts.discord_notifier import DiscordTransitionNotifier
-from runtime_config_loader import load_runtime_config
+from runtime_config_loader import load_runtime_config, RuntimeConfigurationError
 
 from history.base import HistoryStore
 from history.file_store import FileHistoryStore
+from runtime_config_store import RuntimeConfigStore, RuntimeConfigStoreError
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +36,21 @@ class ThesisBot(commands.Bot):
         self.monitoring_manager = MonitoringManager()
         self.monitoring_state = MonitoringStateStore()
         self.monitoring_scheduler: MonitoringScheduler | None = None
+        self.service_config_store = (
+            ServiceConfigStore(
+                self.settings.services_config_path
+            )
+        )
+        self.history_store: HistoryStore | None = None
+        self.runtime_config_store = (
+            RuntimeConfigStore(
+                self.settings.runtime_config_path
+            )
+        )
+        self.service_management_roles: dict[
+            int,
+            set[int],
+        ] = {}
 
         intents = discord.Intents.default()
 
@@ -50,6 +69,24 @@ class ThesisBot(commands.Bot):
             PROJECT_ROOT,
         )
 
+        self.service_management_roles = {
+            guild_config.guild_id: set(
+                guild_config.authorized_role_ids
+            )
+            for guild_config
+            in runtime_config.service_management_guilds
+        }
+
+        logger.info(
+            (
+                "Service management permissions loaded "
+                "| authorized_roles=%d"
+            ),
+            len(
+                self.service_management_roles
+            ),
+        )
+        
         notifiers = ()
 
         if runtime_config.discord_alerts_enabled:
@@ -103,6 +140,8 @@ class ThesisBot(commands.Bot):
 
         await self.load_extension("cogs.general")
         await self.load_extension("cogs.monitoring")
+        await self.load_extension("cogs.service_admin")
+        await self.load_extension("cogs.config_admin")
 
         if self.settings.test_guild_id is None:
             logger.warning(
@@ -125,10 +164,14 @@ class ThesisBot(commands.Bot):
 
     async def on_ready(self) -> None:
         logger.info(
-            "Logged in as %s (ID: %s)",
+            "Bot ready | user=%s | guilds=%d",
             self.user,
-            self.user.id if self.user else "unknown",
+            len(self.guilds),
         )
+        for guild in self.guilds:
+            await self._ensure_guild_configuration(
+                guild
+            )
 
     def _register_services(self) -> None:
         if self.http_session is None:
@@ -169,3 +212,44 @@ class ThesisBot(commands.Bot):
             logger.info("HTTP session closed")
 
         await super().close()
+
+    async def on_guild_join(
+        self,
+        guild: discord.Guild,
+    ) -> None:
+        await self._ensure_guild_configuration(
+            guild
+        )
+
+    async def _ensure_guild_configuration(
+        self,
+        guild: discord.Guild,
+    ) -> None:
+        try:
+            await self.runtime_config_store.ensure_guild(
+                guild_id=guild.id,
+                guild_name=guild.name,
+            )
+
+        except RuntimeConfigStoreError:
+            logger.exception(
+                (
+                    "Unable to persist guild "
+                    "service-management configuration"
+                )
+            )
+            return
+
+        self.service_management_roles.setdefault(
+            guild.id,
+            set(),
+        )
+
+        logger.info(
+            (
+                "Guild configuration available "
+                "| guild=%s | guild_id=%s"
+            ),
+            guild.name,
+            guild.id,
+        )

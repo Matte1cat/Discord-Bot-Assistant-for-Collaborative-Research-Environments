@@ -111,7 +111,13 @@ class MonitoringScheduler:
         completed_results = tuple(
             result
             for result in results
-            if result is not None
+            if (
+                result is not None
+                and self._manager.get_service(
+                    result.service_key
+                )
+                is not None
+            )
         )
 
         for result in completed_results:
