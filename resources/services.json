@@ -77,6 +77,19 @@
           "timeout_seconds": 2.0
         }
       ]
+    },
+    {
+      "key": "testdocker",
+      "display_name": "TestDocker",
+      "checks": [
+        {
+          "type": "http",
+          "name": "TestDockerhttpbin",
+          "url": "https://httpbin.org/status/200",
+          "expected_status": 200,
+          "timeout_seconds": 5.0
+        }
+      ]
     }
   ]
 }
