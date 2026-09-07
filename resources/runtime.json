@@ -9,37 +9,11 @@
   },
   "alerts": {
     "discord": {
-      "enabled": true,
-      "destinations": [
-        {
-          "name": "test cringe",
-          "guild_id": "961646643697033298",
-          "channel_id": "1546499479287627846"
-        },
-        {
-          "name": "TEST SERVER 2",
-          "guild_id": "1546510248305631413",
-          "channel_id": "1546511702701645908"
-        }
-      ]
+      "enabled": false,
+      "destinations": []
     }
   },
   "service_management": {
-    "guilds": [
-      {
-        "guild_id": "961646643697033298",
-        "guild_name": "test cringe",
-        "authorized_role_ids": [
-          "1545476079525822504"
-        ]
-      },
-      {
-        "guild_id": "1546510248305631413",
-        "guild_name": "TEST SERVER 2",
-        "authorized_role_ids": [
-          "1546511573063958658"
-        ]
-      }
-    ]
+    "guilds": []
   }
 }
