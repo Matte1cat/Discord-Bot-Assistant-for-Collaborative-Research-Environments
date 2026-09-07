@@ -6,9 +6,12 @@ import logging
 from bot import ThesisBot
 from config import load_settings
 from logging_config import setup_logging
+from bootstrap import initialize_runtime_config
 
 
 def main() -> None:
+    initialize_runtime_config()
+
     settings = load_settings()
 
     setup_logging(settings.log_level)

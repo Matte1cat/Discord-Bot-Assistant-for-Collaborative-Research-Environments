@@ -9,8 +9,12 @@ services:
     env_file:
       - .env
 
+    environment:
+      SERVICES_CONFIG_PATH: /app/config/services.json
+      RUNTIME_CONFIG_PATH: /app/config/runtime.json
+
     volumes:
-      - ./resources:/app/resources
+      - ./instance/config:/app/config
       - ./data:/app/data
       - ./logs:/app/logs
 

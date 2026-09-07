@@ -222,3 +222,6 @@ logs/
 
 # Runtime data
 data/
+
+# Instance-specific mutable configuration
+instance/
