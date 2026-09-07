@@ -84,8 +84,8 @@
       "checks": [
         {
           "type": "http",
-          "name": "TestDockerhttpbin",
-          "url": "https://httpbin.org/status/200",
+          "name": "Test Docker Http",
+          "url": "http://host.docker.internal:8765",
           "expected_status": 200,
           "timeout_seconds": 5.0
         }

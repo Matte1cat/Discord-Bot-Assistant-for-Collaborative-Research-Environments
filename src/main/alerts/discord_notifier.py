@@ -24,6 +24,37 @@ class DiscordTransitionNotifier:
         self._bot = bot
         self._destination = destination
 
+    @property
+    def guild_id(
+        self,
+    ) -> int:
+        return self._destination.guild_id
+
+
+    @property
+    def channel_id(
+        self,
+    ) -> int:
+        return self._destination.channel_id
+
+
+    def update_destination(
+        self,
+        destination: DiscordAlertDestination,
+    ) -> None:
+        if (
+            destination.guild_id
+            != self._destination.guild_id
+        ):
+            raise ValueError(
+                (
+                    "Cannot change the guild of an "
+                    "existing Discord notifier."
+                )
+            )
+
+        self._destination = destination
+
     async def notify(
         self,
         transition: ServiceTransition,

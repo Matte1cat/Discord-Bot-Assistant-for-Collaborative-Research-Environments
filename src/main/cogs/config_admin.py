@@ -16,6 +16,13 @@ from runtime_config_store import (
     RuntimeConfigStore,
     RuntimeConfigStoreError,
 )
+from alerts.discord_notifier import (
+    DiscordTransitionNotifier,
+)
+
+from runtime_config import (
+    DiscordAlertDestination,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -56,6 +63,14 @@ class ConfigAdmin(commands.Cog):
             settings = (
                 await self.runtime_config_store
                 .get_editable_settings()
+            )
+            alert_channel_id = (
+                await self.runtime_config_store
+                .get_alert_destination(
+                    interaction.guild_id
+                )
+                if interaction.guild_id is not None
+                else None
             )
 
         except RuntimeConfigStoreError as exc:
@@ -126,11 +141,21 @@ class ConfigAdmin(commands.Cog):
             inline=True,
         )
 
+        embed.add_field(
+            name="Alert channel for this server",
+            value=(
+                f"<#{alert_channel_id}>"
+                if alert_channel_id is not None
+                else "Not configured"
+            ),
+            inline=False,
+        )
+
         embed.set_footer(
             text=(
-                "Configuration changes made through "
-                "Discord require a bot restart "
-                "to take effect."
+                "Alert-channel changes are applied live. "
+                "Other runtime setting changes may "
+                "require a bot restart."
             )
         )
 
@@ -301,6 +326,319 @@ class ConfigAdmin(commands.Cog):
             return
 
         raise error
+
+    def _apply_alert_destination_live(
+        self,
+        destination: DiscordAlertDestination,
+    ) -> bool:
+        if not getattr(
+            self.bot,
+            "discord_alerts_active",
+            False,
+        ):
+            return False
+
+        scheduler = getattr(
+            self.bot,
+            "monitoring_scheduler",
+            None,
+        )
+
+        notifiers = getattr(
+            self.bot,
+            "discord_alert_notifiers",
+            None,
+        )
+
+        if scheduler is None or notifiers is None:
+            raise RuntimeError(
+                (
+                    "Discord alert runtime "
+                    "is not initialized."
+                )
+            )
+
+        existing = notifiers.get(
+            destination.guild_id
+        )
+
+        if existing is not None:
+            existing.update_destination(
+                destination
+            )
+            return True
+
+        notifier = DiscordTransitionNotifier(
+            bot=self.bot,
+            destination=destination,
+        )
+
+        notifiers[
+            destination.guild_id
+        ] = notifier
+
+        scheduler.add_notifier(
+            notifier
+        )
+
+        return True
+
+
+    def _remove_alert_destination_live(
+        self,
+        guild_id: int,
+    ) -> None:
+        scheduler = getattr(
+            self.bot,
+            "monitoring_scheduler",
+            None,
+        )
+
+        notifiers = getattr(
+            self.bot,
+            "discord_alert_notifiers",
+            None,
+        )
+
+        if scheduler is None or notifiers is None:
+            raise RuntimeError(
+                (
+                    "Discord alert runtime "
+                    "is not initialized."
+                )
+            )
+
+        notifier = notifiers.pop(
+            guild_id,
+            None,
+        )
+
+        if notifier is not None:
+            scheduler.remove_notifier(
+                notifier
+            )
+
+    @config.command(
+        name="alert-channel",
+        description=(
+            "Set the alert channel for this server."
+        ),
+    )
+    @app_commands.describe(
+        channel=(
+            "Channel that will receive "
+            "monitoring transition alerts."
+        ),
+    )
+    @can_manage_services()
+    async def set_alert_channel(
+        self,
+        interaction: discord.Interaction,
+        channel: discord.TextChannel,
+    ) -> None:
+        if interaction.guild is None:
+            await interaction.response.send_message(
+                (
+                    "This command can only be "
+                    "used in a server."
+                ),
+                ephemeral=True,
+            )
+            return
+
+        if channel.guild.id != interaction.guild.id:
+            await interaction.response.send_message(
+                (
+                    "The alert channel must belong "
+                    "to this server."
+                ),
+                ephemeral=True,
+            )
+            return
+
+        try:
+            await (
+                self.runtime_config_store
+                .set_alert_destination(
+                    guild_id=interaction.guild.id,
+                    guild_name=interaction.guild.name,
+                    channel_id=channel.id,
+                )
+            )
+
+        except RuntimeConfigStoreError as exc:
+            await interaction.response.send_message(
+                (
+                    "Alert channel could not "
+                    f"be saved: {exc}"
+                ),
+                ephemeral=True,
+            )
+            return
+
+        destination = DiscordAlertDestination(
+            name=interaction.guild.name,
+            guild_id=interaction.guild.id,
+            channel_id=channel.id,
+        )
+
+        try:
+            applied_live = (
+                self._apply_alert_destination_live(
+                    destination
+                )
+            )
+
+        except Exception:
+            logger.exception(
+                (
+                    "Alert channel persisted but "
+                    "live update failed "
+                    "| guild_id=%s | channel_id=%s"
+                ),
+                interaction.guild.id,
+                channel.id,
+            )
+
+            await interaction.response.send_message(
+                (
+                    f"Alert channel saved as "
+                    f"{channel.mention}, but the live "
+                    "update failed.\n"
+                    "**Restart the bot to apply it.**"
+                ),
+                ephemeral=True,
+            )
+            return
+
+        logger.info(
+            (
+                "Discord alert channel configured "
+                "| guild_id=%s | channel_id=%s"
+            ),
+            interaction.guild.id,
+            channel.id,
+        )
+
+        if applied_live:
+            message = (
+                f"Alert channel set to "
+                f"{channel.mention} and applied "
+                "**immediately**."
+            )
+
+        else:
+            message = (
+                f"Alert channel saved as "
+                f"{channel.mention}.\n"
+                "Discord alerts are not currently "
+                "active; the channel will be used "
+                "when alerts are enabled and the "
+                "bot is restarted."
+            )
+
+        await interaction.response.send_message(
+            message,
+            ephemeral=True,
+        )
+
+    @config.command(
+        name="alert-channel-clear",
+        description=(
+            "Remove the alert channel "
+            "configured for this server."
+        ),
+    )
+    @can_manage_services()
+    async def clear_alert_channel(
+        self,
+        interaction: discord.Interaction,
+    ) -> None:
+        if interaction.guild is None:
+            await interaction.response.send_message(
+                (
+                    "This command can only be "
+                    "used in a server."
+                ),
+                ephemeral=True,
+            )
+            return
+
+        try:
+            alerts_disabled = (
+                await self.runtime_config_store
+                .remove_alert_destination(
+                    guild_id=interaction.guild.id
+                )
+            )
+
+        except RuntimeConfigStoreError as exc:
+            await interaction.response.send_message(
+                (
+                    "Alert channel could not "
+                    f"be removed: {exc}"
+                ),
+                ephemeral=True,
+            )
+            return
+
+        try:
+            self._remove_alert_destination_live(
+                interaction.guild.id
+            )
+
+            if alerts_disabled:
+                setattr(
+                    self.bot,
+                    "discord_alerts_active",
+                    False,
+                )
+
+        except Exception:
+            logger.exception(
+                (
+                    "Alert channel removed from "
+                    "configuration but live cleanup "
+                    "failed | guild_id=%s"
+                ),
+                interaction.guild.id,
+            )
+
+            await interaction.response.send_message(
+                (
+                    "Alert channel was removed from "
+                    "the persisted configuration, "
+                    "but the live update failed.\n"
+                    "**Restart the bot to fully apply it.**"
+                ),
+                ephemeral=True,
+            )
+            return
+
+        logger.info(
+            (
+                "Discord alert channel removed "
+                "| guild_id=%s"
+            ),
+            interaction.guild.id,
+        )
+
+        if alerts_disabled:
+            message = (
+                "Alert channel removed. "
+                "No destinations remain, so "
+                "Discord alerts were also disabled."
+            )
+        else:
+            message = (
+                "Alert channel removed and "
+                "applied immediately."
+            )
+
+        await interaction.response.send_message(
+            message,
+            ephemeral=True,
+        )
 
 
 async def setup(

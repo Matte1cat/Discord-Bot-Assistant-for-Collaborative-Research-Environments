@@ -52,6 +52,13 @@ class ThesisBot(commands.Bot):
             set[int],
         ] = {}
 
+        self.discord_alert_notifiers: dict[
+            int,
+            DiscordTransitionNotifier,
+        ] = {}
+
+        self.discord_alerts_active = False
+
         intents = discord.Intents.default()
 
         super().__init__(
@@ -87,20 +94,37 @@ class ThesisBot(commands.Bot):
             ),
         )
         
+        self.discord_alerts_active = (
+            runtime_config.discord_alerts_enabled
+        )
+
+        self.discord_alert_notifiers = {}
+
         notifiers = ()
 
-        if runtime_config.discord_alerts_enabled:
-            notifiers = tuple(
-                DiscordTransitionNotifier(
+        if self.discord_alerts_active:
+            for destination in (
+                runtime_config
+                .discord_alert_destinations
+            ):
+                notifier = DiscordTransitionNotifier(
                     bot=self,
                     destination=destination,
                 )
-                for destination
-                in runtime_config.discord_alert_destinations
+
+                self.discord_alert_notifiers[
+                    destination.guild_id
+                ] = notifier
+
+            notifiers = tuple(
+                self.discord_alert_notifiers.values()
             )
 
             logger.info(
-                "Discord monitoring alerts enabled | destinations=%d",
+                (
+                    "Discord monitoring alerts enabled "
+                    "| destinations=%d"
+                ),
                 len(notifiers),
             )
 
@@ -111,7 +135,11 @@ class ThesisBot(commands.Bot):
 
         if runtime_config.history_enabled:
             self.history_store = FileHistoryStore(
-                directory=runtime_config.history_directory
+                directory=runtime_config.history_directory,
+                max_file_size_bytes=(
+                    runtime_config
+                    .history_max_file_size_bytes
+                ),
             )
 
             logger.info(
@@ -143,24 +171,7 @@ class ThesisBot(commands.Bot):
         await self.load_extension("cogs.service_admin")
         await self.load_extension("cogs.config_admin")
 
-        if self.settings.test_guild_id is None:
-            logger.warning(
-                "No test guild configured. Command sync skipped."
-            )
-            return
-
-        guild = discord.Object(
-            id=self.settings.test_guild_id
-        )
-
-        self.tree.copy_global_to(guild=guild)
-        synced = await self.tree.sync(guild=guild)
-
-        logger.info(
-            "Synced %d command(s) to test guild %s",
-            len(synced),
-            self.settings.test_guild_id,
-        )
+        await self._sync_application_commands()
 
     async def on_ready(self) -> None:
         logger.info(
@@ -252,4 +263,41 @@ class ThesisBot(commands.Bot):
             ),
             guild.name,
             guild.id,
+        )
+
+    async def _sync_application_commands(
+        self,
+    ) -> None:
+        if self.settings.test_guild_id is not None:
+            guild = discord.Object(
+                id=self.settings.test_guild_id
+            )
+
+            self.tree.copy_global_to(
+                guild=guild
+            )
+
+            synced = await self.tree.sync(
+                guild=guild
+            )
+
+            logger.info(
+                (
+                    "Synced %d application command(s) "
+                    "to development guild %s"
+                ),
+                len(synced),
+                self.settings.test_guild_id,
+            )
+
+            return
+
+        synced = await self.tree.sync()
+
+        logger.info(
+            (
+                "Synced %d global application "
+                "command(s)"
+            ),
+            len(synced),
         )

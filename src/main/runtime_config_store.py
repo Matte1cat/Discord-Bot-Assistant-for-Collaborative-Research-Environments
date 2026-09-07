@@ -514,6 +514,71 @@ class RuntimeConfigStore:
     ) -> None:
         root = self._load_root()
 
+        discord_alerts = (
+            self._get_discord_alerts_config(
+                root
+            )
+        )
+
+        destinations = discord_alerts[
+            "destinations"
+        ]
+
+        if enabled and not destinations:
+            raise RuntimeConfigStoreError(
+                (
+                    "Discord alerts cannot be enabled "
+                    "without at least one configured "
+                    "alert channel."
+                )
+            )
+
+        discord_alerts["enabled"] = enabled
+
+        self._write_root(
+            root
+        )
+
+    async def get_alert_destination(
+        self,
+        guild_id: int,
+    ) -> int | None:
+        async with self._lock:
+            return await asyncio.to_thread(
+                self._get_alert_destination_sync,
+                guild_id,
+            )
+
+
+    async def set_alert_destination(
+        self,
+        guild_id: int,
+        guild_name: str,
+        channel_id: int,
+    ) -> None:
+        async with self._lock:
+            await asyncio.to_thread(
+                self._set_alert_destination_sync,
+                guild_id,
+                guild_name,
+                channel_id,
+            )
+
+
+    async def remove_alert_destination(
+        self,
+        guild_id: int,
+    ) -> bool:
+        async with self._lock:
+            return await asyncio.to_thread(
+                self._remove_alert_destination_sync,
+                guild_id,
+            )
+
+    @staticmethod
+    def _get_discord_alerts_config(
+        root: dict[str, Any],
+    ) -> dict[str, Any]:
         alerts = root.setdefault(
             "alerts",
             {},
@@ -540,8 +605,216 @@ class RuntimeConfigStore:
                 "'alerts.discord' must be an object."
             )
 
-        discord_alerts["enabled"] = enabled
+        destinations = discord_alerts.setdefault(
+            "destinations",
+            [],
+        )
+
+        if not isinstance(
+            destinations,
+            list,
+        ):
+            raise RuntimeConfigStoreError(
+                (
+                    "'alerts.discord.destinations' "
+                    "must be a list."
+                )
+            )
+
+        return discord_alerts
+
+
+    @staticmethod
+    def _find_alert_destination(
+        destinations: list[Any],
+        guild_id: int,
+    ) -> dict[str, Any] | None:
+        expected_guild_id = str(
+            guild_id
+        )
+
+        return next(
+            (
+                destination
+                for destination in destinations
+                if (
+                    isinstance(
+                        destination,
+                        dict,
+                    )
+                    and str(
+                        destination.get(
+                            "guild_id",
+                            "",
+                        )
+                    ) == expected_guild_id
+                )
+            ),
+            None,
+        )
+
+
+    def _get_alert_destination_sync(
+        self,
+        guild_id: int,
+    ) -> int | None:
+        root = self._load_root()
+
+        discord_alerts = (
+            self._get_discord_alerts_config(
+                root
+            )
+        )
+
+        destinations = discord_alerts[
+            "destinations"
+        ]
+
+        destination = (
+            self._find_alert_destination(
+                destinations,
+                guild_id,
+            )
+        )
+
+        if destination is None:
+            return None
+
+        raw_channel_id = destination.get(
+            "channel_id"
+        )
+
+        try:
+            channel_id = int(
+                raw_channel_id
+            )
+        except (TypeError, ValueError) as exc:
+            raise RuntimeConfigStoreError(
+                (
+                    "Configured alert destination "
+                    "contains an invalid channel ID."
+                )
+            ) from exc
+
+        if channel_id <= 0:
+            raise RuntimeConfigStoreError(
+                (
+                    "Configured alert destination "
+                    "contains an invalid channel ID."
+                )
+            )
+
+        return channel_id
+
+
+    def _set_alert_destination_sync(
+        self,
+        guild_id: int,
+        guild_name: str,
+        channel_id: int,
+    ) -> None:
+        if guild_id <= 0 or channel_id <= 0:
+            raise RuntimeConfigStoreError(
+                "Guild and channel IDs must be positive."
+            )
+
+        root = self._load_root()
+
+        discord_alerts = (
+            self._get_discord_alerts_config(
+                root
+            )
+        )
+
+        destinations = discord_alerts[
+            "destinations"
+        ]
+
+        destination = (
+            self._find_alert_destination(
+                destinations,
+                guild_id,
+            )
+        )
+
+        if destination is None:
+            destinations.append(
+                {
+                    "name": guild_name,
+                    "guild_id": str(
+                        guild_id
+                    ),
+                    "channel_id": str(
+                        channel_id
+                    ),
+                }
+            )
+
+        else:
+            destination["name"] = guild_name
+
+            destination["guild_id"] = str(
+                guild_id
+            )
+
+            destination["channel_id"] = str(
+                channel_id
+            )
 
         self._write_root(
             root
         )
+
+
+    def _remove_alert_destination_sync(
+        self,
+        guild_id: int,
+    ) -> bool:
+        root = self._load_root()
+
+        discord_alerts = (
+            self._get_discord_alerts_config(
+                root
+            )
+        )
+
+        destinations = discord_alerts[
+            "destinations"
+        ]
+
+        destination = (
+            self._find_alert_destination(
+                destinations,
+                guild_id,
+            )
+        )
+
+        if destination is None:
+            raise RuntimeConfigStoreError(
+                (
+                    "No alert channel is configured "
+                    "for this server."
+                )
+            )
+
+        destinations.remove(
+            destination
+        )
+
+        alerts_disabled = False
+
+        if (
+            not destinations
+            and discord_alerts.get(
+                "enabled",
+                False,
+            )
+        ):
+            discord_alerts["enabled"] = False
+            alerts_disabled = True
+
+        self._write_root(
+            root
+        )
+
+        return alerts_disabled

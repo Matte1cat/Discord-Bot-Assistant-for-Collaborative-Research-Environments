@@ -115,6 +115,35 @@ def load_runtime_config(
 
     history_directory = history_directory.resolve()
 
+    history_max_file_size_mb = history.get(
+        "max_file_size_mb",
+        25,
+    )
+
+    if (
+        isinstance(
+            history_max_file_size_mb,
+            bool,
+        )
+        or not isinstance(
+            history_max_file_size_mb,
+            int,
+        )
+        or history_max_file_size_mb <= 0
+    ):
+        raise RuntimeConfigurationError(
+            (
+                "'history.max_file_size_mb' "
+                "must be a positive integer."
+            )
+        )
+
+    history_max_file_size_bytes = (
+        history_max_file_size_mb
+        * 1024
+        * 1024
+    )
+
     service_management = config.get(
         "service_management",
         {},
@@ -320,6 +349,8 @@ def load_runtime_config(
 
     destinations: list[DiscordAlertDestination] = []
 
+    destination_guild_ids: set[int] = set()
+
     for index, raw_destination in enumerate(
         raw_destinations
     ):
@@ -340,6 +371,18 @@ def load_runtime_config(
         guild_id = _parse_discord_id(
             raw_destination.get("guild_id"),
             "guild_id",
+        )
+
+        if guild_id in destination_guild_ids:
+            raise RuntimeConfigurationError(
+                (
+                    "Only one Discord alert destination "
+                    "may be configured per guild."
+                )
+            )
+
+        destination_guild_ids.add(
+            guild_id
         )
 
         channel_id = _parse_discord_id(
@@ -369,6 +412,9 @@ def load_runtime_config(
         history_enabled=history_enabled,
         history_directory=history_directory,
         discord_alerts_enabled=enabled,
+        history_max_file_size_bytes=(
+            history_max_file_size_bytes
+        ),
         discord_alert_destinations=tuple(
             destinations
         ),

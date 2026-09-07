@@ -50,6 +50,45 @@ class MonitoringScheduler:
             and not self._task.done()
         )
 
+    def add_notifier(
+        self,
+        notifier: TransitionNotifier,
+    ) -> None:
+        if any(
+            existing is notifier
+            for existing in self._notifiers
+        ):
+            return
+
+        self._notifiers = (
+            *self._notifiers,
+            notifier,
+        )
+
+        logger.info(
+            "Transition notifier added at runtime."
+        )
+
+
+    def remove_notifier(
+        self,
+        notifier: TransitionNotifier,
+    ) -> None:
+        previous_count = len(
+            self._notifiers
+        )
+
+        self._notifiers = tuple(
+            existing
+            for existing in self._notifiers
+            if existing is not notifier
+        )
+
+        if len(self._notifiers) != previous_count:
+            logger.info(
+                "Transition notifier removed at runtime."
+            )
+
     def start(self) -> None:
         if self.is_running:
             logger.warning(

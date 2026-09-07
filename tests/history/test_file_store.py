@@ -358,3 +358,208 @@ async def test_history_limit_must_be_positive(
             service_key="test-service",
             limit=-1,
         )
+
+@pytest.mark.asyncio
+async def test_history_file_is_trimmed_when_size_limit_is_exceeded(
+    tmp_path,
+) -> None:
+    history_directory = (
+        tmp_path / "history"
+    )
+
+    store = FileHistoryStore(
+        directory=history_directory,
+        max_file_size_bytes=1500,
+    )
+
+    for index in range(20):
+        await store.append_service_result(
+            make_service_result(
+                CheckStatus.UP,
+                message=(
+                    f"record-{index}-"
+                    + ("x" * 100)
+                ),
+            )
+        )
+
+    results_file = (
+        history_directory
+        / "service_results.jsonl"
+    )
+
+    assert (
+        results_file.stat().st_size
+        <= 1500
+    )
+
+    content = results_file.read_text(
+        encoding="utf-8"
+    )
+
+    assert "record-19-" in content
+
+    assert "record-0-" not in content
+
+@pytest.mark.asyncio
+async def test_transition_file_is_trimmed_when_size_limit_is_exceeded(
+    tmp_path,
+) -> None:
+    history_directory = (
+        tmp_path / "history"
+    )
+
+    store = FileHistoryStore(
+        directory=history_directory,
+        max_file_size_bytes=1000,
+    )
+
+    for _ in range(30):
+        await store.append_transition(
+            make_transition(
+                CheckStatus.UP,
+                CheckStatus.DOWN,
+            )
+        )
+
+    transitions_file = (
+        history_directory
+        / "transitions.jsonl"
+    )
+
+    assert (
+        transitions_file.stat().st_size
+        <= 1000
+    )
+
+    history = (
+        await store.get_recent_transitions(
+            service_key="test-service",
+            limit=5,
+        )
+    )
+
+    assert len(history) > 0
+
+@pytest.mark.asyncio
+async def test_service_history_is_trimmed_and_keeps_recent_records(
+    tmp_path,
+) -> None:
+    history_directory = (
+        tmp_path / "history"
+    )
+
+    max_size = 1500
+
+    store = FileHistoryStore(
+        directory=history_directory,
+        max_file_size_bytes=max_size,
+    )
+
+    for index in range(30):
+        await store.append_service_result(
+            make_service_result(
+                CheckStatus.UP,
+                message=(
+                    f"record-{index}-"
+                    + ("x" * 100)
+                ),
+            )
+        )
+
+    results_file = (
+        history_directory
+        / "service_results.jsonl"
+    )
+
+    assert results_file.exists()
+    assert results_file.stat().st_size <= max_size
+
+    content = results_file.read_text(
+        encoding="utf-8"
+    )
+
+    # The newest information must survive trimming.
+    assert "record-29-" in content
+
+    # Old records should have been discarded.
+    assert "record-0-" not in content
+
+    history = (
+        await store.get_recent_service_results(
+            service_key="test-service",
+            limit=5,
+        )
+    )
+
+    assert len(history) > 0
+    assert (
+        history[0].check_results[0].message
+        == "record-29-" + ("x" * 100)
+    )
+
+@pytest.mark.asyncio
+async def test_transition_history_is_trimmed_and_remains_readable(
+    tmp_path,
+) -> None:
+    history_directory = (
+        tmp_path / "history"
+    )
+
+    max_size = 1000
+
+    store = FileHistoryStore(
+        directory=history_directory,
+        max_file_size_bytes=max_size,
+    )
+
+    for _ in range(30):
+        await store.append_transition(
+            make_transition(
+                CheckStatus.UP,
+                CheckStatus.DOWN,
+            )
+        )
+
+    transitions_file = (
+        history_directory
+        / "transitions.jsonl"
+    )
+
+    assert transitions_file.exists()
+
+    assert (
+        transitions_file.stat().st_size
+        <= max_size
+    )
+
+    history = (
+        await store.get_recent_transitions(
+            service_key="test-service",
+            limit=5,
+        )
+    )
+
+    assert len(history) > 0
+
+    assert (
+        history[0].previous_status
+        is CheckStatus.UP
+    )
+
+    assert (
+        history[0].current_status
+        is CheckStatus.DOWN
+    )
+
+def test_history_max_file_size_must_be_positive(
+    tmp_path,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="greater than zero",
+    ):
+        FileHistoryStore(
+            directory=tmp_path / "history",
+            max_file_size_bytes=0,
+        )

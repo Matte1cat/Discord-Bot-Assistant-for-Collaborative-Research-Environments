@@ -20,6 +20,11 @@ from monitoring.models import (
     ServiceTransition,
 )
 
+DEFAULT_MAX_FILE_SIZE_BYTES = (
+    25 * 1024 * 1024
+)
+
+TRIM_TARGET_RATIO = 0.80
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +33,28 @@ class FileHistoryStore:
     def __init__(
         self,
         directory: Path,
+        max_file_size_bytes: int = (
+            DEFAULT_MAX_FILE_SIZE_BYTES
+        ),
     ) -> None:
+        if max_file_size_bytes <= 0:
+            raise ValueError(
+                (
+                    "Maximum history file size "
+                    "must be greater than zero."
+                )
+            )
+
         self._directory = directory
+
+        self._max_file_size_bytes = (
+            max_file_size_bytes
+        )
+
+        self._trim_target_bytes = int(
+            max_file_size_bytes
+            * TRIM_TARGET_RATIO
+        )
 
         self._service_results_file = (
             directory / "service_results.jsonl"
@@ -169,6 +194,94 @@ class FileHistoryStore:
         ) as file:
             file.write(serialized)
             file.write("\n")
+
+        self._trim_file_if_needed(
+            path
+        )
+
+    def _trim_file_if_needed(
+        self,
+        path: Path,
+    ) -> None:
+        try:
+            current_size = path.stat().st_size
+
+        except FileNotFoundError:
+            return
+
+        if (
+            current_size
+            <= self._max_file_size_bytes
+        ):
+            return
+
+        with path.open(
+            mode="rb",
+        ) as file:
+            lines = file.readlines()
+
+        retained_lines: list[bytes] = []
+        retained_size = 0
+
+        for line in reversed(
+            lines
+        ):
+            line_size = len(
+                line
+            )
+
+            if (
+                retained_lines
+                and retained_size + line_size
+                > self._trim_target_bytes
+            ):
+                break
+
+            retained_lines.append(
+                line
+            )
+
+            retained_size += (
+                line_size
+            )
+
+        retained_lines.reverse()
+
+        temporary_path = path.with_name(
+            f".{path.name}.trim.tmp"
+        )
+
+        try:
+            with temporary_path.open(
+                mode="wb",
+            ) as file:
+                file.writelines(
+                    retained_lines
+                )
+
+            temporary_path.replace(
+                path
+            )
+
+        finally:
+            try:
+                temporary_path.unlink(
+                    missing_ok=True
+                )
+            except OSError:
+                pass
+
+        logger.info(
+            (
+                "History file trimmed "
+                "| file=%s "
+                "| previous_bytes=%d "
+                "| retained_bytes=%d"
+            ),
+            path.name,
+            current_size,
+            retained_size,
+        )
 
     def _read_service_results(
         self,

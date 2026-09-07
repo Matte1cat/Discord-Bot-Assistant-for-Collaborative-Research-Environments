@@ -227,3 +227,85 @@ def test_missing_service_management_defaults_to_empty(
         loaded.service_management_guilds
         == ()
     )
+
+def test_history_max_file_size_defaults_to_25_mb(
+    tmp_path,
+) -> None:
+    path = tmp_path / "runtime.json"
+
+    write_config(
+        path,
+        make_config([]),
+    )
+
+    config = load_runtime_config(
+        path,
+        project_root=tmp_path,
+    )
+
+    assert (
+        config.history_max_file_size_bytes
+        == 25 * 1024 * 1024
+    )
+
+def test_custom_history_max_file_size_is_loaded(
+    tmp_path,
+) -> None:
+    path = tmp_path / "runtime.json"
+
+    config = make_config([])
+
+    config["history"][
+        "max_file_size_mb"
+    ] = 10
+
+    write_config(
+        path,
+        config,
+    )
+
+    loaded = load_runtime_config(
+        path,
+        project_root=tmp_path,
+    )
+
+    assert (
+        loaded.history_max_file_size_bytes
+        == 10 * 1024 * 1024
+    )
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        0,
+        -1,
+        True,
+        "25",
+        2.5,
+    ],
+)
+def test_invalid_history_max_file_size_is_rejected(
+    tmp_path,
+    value,
+) -> None:
+    path = tmp_path / "runtime.json"
+
+    config = make_config([])
+
+    config["history"][
+        "max_file_size_mb"
+    ] = value
+
+    write_config(
+        path,
+        config,
+    )
+
+    with pytest.raises(
+        RuntimeConfigurationError,
+        match="max_file_size_mb",
+    ):
+        load_runtime_config(
+            path,
+            project_root=tmp_path,
+        )

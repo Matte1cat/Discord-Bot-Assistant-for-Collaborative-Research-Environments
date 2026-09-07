@@ -23,6 +23,7 @@ class RuntimeConfig:
 
     history_enabled: bool
     history_directory: Path
+    history_max_file_size_bytes: int
 
     service_management_guilds: tuple[
         ServiceManagementGuildConfig, ...
