@@ -10,9 +10,9 @@ from bootstrap import initialize_runtime_config
 
 
 def main() -> None:
-    initialize_runtime_config()
-
     settings = load_settings()
+
+    initialize_runtime_config()
 
     setup_logging(settings.log_level)
 
