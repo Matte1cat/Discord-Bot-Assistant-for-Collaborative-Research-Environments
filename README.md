@@ -6,7 +6,7 @@ The project implements a modular Discord bot designed to support collaborative r
 
 The current prototype focuses on **service and infrastructure monitoring**, providing manual and periodic availability checks, runtime service management, transition detection, Discord notifications, persistent monitoring history, role-based administration, and containerized deployment.
 
-> **Project status:** the monitoring-focused implementation described in this repository is feature-complete and has entered the final documentation and thesis-validation stage.
+> **Project status:** the monitoring-focused implementation is feature-complete. Automated and functional validation has been completed, and the project is in the final thesis-documentation and review stage.
 >
 > The system has been tested locally, through Docker, across multiple Discord guilds, and in a remote deployment environment.
 
@@ -329,6 +329,8 @@ When a custom configuration path is provided through the environment but its tar
 4. continues startup using the newly created operational file.
 
 Existing operational configuration is **never overwritten** by the bootstrap.
+
+Application settings are loaded before the bootstrap step, so custom configuration paths defined in `.env` are available when missing operational files are initialized.
 
 Conceptually:
 
@@ -1121,7 +1123,7 @@ Malformed history records encountered during reading are ignored and logged inst
 
 Application logging is written both to:
 
-* standard output;
+* the process console (`stderr`);
 * rotating log files.
 
 Local log files are stored under:
@@ -1318,7 +1320,7 @@ pytest -q
 During the final validation stage:
 
 ```text
-95 tests passed
+97 tests passed
 ```
 
 The automated test suite covers, among other areas:
@@ -1346,7 +1348,10 @@ The automated test suite covers, among other areas:
 * history ordering;
 * malformed history records;
 * history filtering;
-* history retention and file trimming.
+* history retention and file trimming;
+* startup configuration bootstrap from `.env`;
+* startup with configuration paths already present in the process environment;
+* preservation of existing operational configuration during bootstrap.
 
 The main automated suite relies on temporary files, mocks and local test doubles where appropriate and does not require real Internet services.
 
