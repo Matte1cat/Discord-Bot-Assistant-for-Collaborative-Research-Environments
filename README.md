@@ -6,9 +6,9 @@ The project implements a modular Discord bot designed to support collaborative r
 
 The current prototype focuses on **service and infrastructure monitoring**, providing manual and periodic availability checks, runtime service management, transition detection, Discord notifications, persistent monitoring history, role-based administration, and containerized deployment.
 
-> **Project status:** the monitoring-focused implementation is feature-complete. Automated and functional validation has been completed, and the project is in the final thesis-documentation and review stage.
+> **Project status:** the thesis project has been completed and presented. The monitoring prototype has been validated through automated tests and functional checks performed locally, through Docker, across multiple Discord guilds, and on Railway.
 >
-> The system has been tested locally, through Docker, across multiple Discord guilds, and in a remote deployment environment.
+The version described in the thesis is available in the [`v0.1.0` release](https://github.com/Matte1cat/Discord-Bot-Assistant-for-Collaborative-Research-Environments/releases/tag/v0.1.0).
 
 ---
 
@@ -1105,13 +1105,9 @@ When a file grows beyond its configured maximum:
 
 The service-results and transition files are bounded independently.
 
-With the default configuration, the theoretical combined history size is approximately:
+With the default configuration, each history file has a trimming threshold of 25 MiB, for a combined nominal threshold of 50 MiB.
 
-```text
-50 MiB
-```
-
-before trimming reduces whichever file crosses its individual threshold.
+These thresholds are not strict storage quotas: files may temporarily exceed them before trimming, and at least the most recent record is retained even if that record alone exceeds the configured limit.
 
 Complete lines are retained during trimming so the remaining file continues to contain valid JSONL records.
 
@@ -1160,7 +1156,7 @@ ERROR
 CRITICAL
 ```
 
-Standard output is particularly useful in containerized and remote environments where the deployment platform collects process logs directly.
+Console logging is particularly useful in containerized and remote environments, where the deployment platform collects process logs directly.
 
 ---
 
